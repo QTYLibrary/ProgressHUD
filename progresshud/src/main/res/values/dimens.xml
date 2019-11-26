@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="padding_left">16dp</dimen>
+    <dimen name="padding_top">16dp</dimen>
+    <dimen name="padding_right">16dp</dimen>
+    <dimen name="padding_bottom">16dp</dimen>
+    <dimen name="dialog_background_radius">10dp</dimen>
+    <dimen name="label_margin_top">4dp</dimen>
+    <dimen name="label_margin_left">4dp</dimen>
+    <dimen name="detail_margin_top">2dp</dimen>
+    <dimen name="vertical_loading_view_width">48dp</dimen>
+    <dimen name="vertical_loading_view_height">48dp</dimen>
+    <dimen name="horizontal_loading_view_width">32dp</dimen>
+    <dimen name="horizontal_loading_view_height">32dp</dimen>
+
+    <integer name="label_text_size">16</integer>
+    <integer name="detail_text_size">12</integer>
+    <integer name="window_dimamount">0</integer>
+    <integer name="animation_speed">2</integer>
+    <integer name="delay_time">0</integer>
+
+    <bool name="show_progress">false</bool>
+    <bool name="canceled_on_touch_outside">false</bool>
+    <bool name="intercept_key_event">true</bool>
+</resources>
