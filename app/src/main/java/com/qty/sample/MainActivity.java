@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Service;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 
@@ -58,7 +59,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showVTextWithLoadingAutoDismiss() {
-        ProgressHUD.getInstance(this).setListener(() -> Log.d(TAG, "ProgressHUD dismiss.")).showVTextWithLoading("正在加载...", 1500);
+        ProgressHUD.getInstance(this).setWindowBackgroundDimAmount(0.3f).setListener(() -> Log.d(TAG, "ProgressHUD dismiss."))
+                .showVTextWithLoading("正在加载...", 3000);
     }
 
     private void showLoading() {

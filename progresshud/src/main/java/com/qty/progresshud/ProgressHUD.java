@@ -1,6 +1,5 @@
 package com.qty.progresshud;
 
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -8,18 +7,13 @@ import android.content.res.Resources;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
 import androidx.annotation.DrawableRes;
-import androidx.annotation.NonNull;
 
 /**
  * Progress indicator
@@ -117,6 +111,11 @@ public class ProgressHUD {
     private int mProgress;
 
     /**
+     * Window type
+     */
+    private int mWindowType;
+
+    /**
      * Window background dimamount, Value must be greater than or equal to 0.0 and less than or equal to 1.0
      */
     private float mDimAmount;
@@ -174,34 +173,22 @@ public class ProgressHUD {
     }
 
     private void setDefaultValue() {
-        mWindownBg = mResources.getDrawable(R.drawable.window_background);
+        mWindownBg = new ColorDrawable(mResources.getColor(R.color.window_background_color));
         mDialogBg = mResources.getDrawable(R.drawable.dialog_bg);
         mPaddingLeft = mResources.getDimensionPixelSize(R.dimen.padding_left);
         mPaddingTop = mResources.getDimensionPixelSize(R.dimen.padding_top);
         mPaddingRight = mResources.getDimensionPixelSize(R.dimen.padding_right);
         mPaddingBottom = mResources.getDimensionPixelSize(R.dimen.padding_bottom);
         mLabelTextSize = mResources.getInteger(R.integer.label_text_size);
-        Log.d("qty", "setDefaultValue=>size: " + mLabelTextSize);
         mLabelTextColor = mResources.getColor(R.color.label_text_color);
         mDetailTextSize = mResources.getInteger(R.integer.detail_text_size);
         mDetailTextColor = mResources.getColor(R.color.detail_text_color);
         mAnimSpeedRate = mResources.getInteger(R.integer.animation_speed);
         mDimAmount = mResources.getInteger(R.integer.window_dimamount);
+        mWindowType = WindowManager.LayoutParams.TYPE_APPLICATION;
         isShowProgress = mResources.getBoolean(R.bool.show_progress);
         isInterceptKeyEvent = mResources.getBoolean(R.bool.intercept_key_event);
         isCanceledOnTouchOutside = mResources.getBoolean(R.bool.canceled_on_touch_outside);
-    }
-
-
-    public void showLoading() {
-        showLoading(0);
-    }
-
-    public void showLoading(int dismissTime) {
-        View view = new SpinView(mContext);
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_width),
-                mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_height));
-        showVTextWithLoading(view, layoutParams, null, dismissTime);
     }
 
     /**
@@ -230,6 +217,10 @@ public class ProgressHUD {
         showVTextWithState(text, stateResId, 0);
     }
 
+    public void showVTextWithState(CharSequence text, CharSequence detail, int stateResId) {
+        showVTextWithState(text, stateResId, 0);
+    }
+
     /**
      * Vertical layout indicator with status text and status picture, and disappear after the specified time
      * @param text Status text
@@ -237,10 +228,14 @@ public class ProgressHUD {
      * @param dismissTime Time of disappearance, in milliseconds
      */
     public void showVTextWithState(CharSequence text, int stateResId, int dismissTime) {
+        showVTextWithState(text, null, stateResId, dismissTime);
+    }
+
+    public void showVTextWithState(CharSequence text, CharSequence detail, int stateResId, int dismissTime) {
         ImageView view = new ImageView(mContext);
         view.setImageResource(stateResId);
         ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        showVTextWithLoading(view, layoutParams, text, dismissTime);
+        showVerticalProgressHUD(view, layoutParams, text, detail, dismissTime);
     }
 
 
@@ -261,6 +256,17 @@ public class ProgressHUD {
        showVTextWithLoading(null, null, text, dismissTime);
     }
 
+    public void showLoading() {
+        showLoading(0);
+    }
+
+    public void showLoading(int dismissTime) {
+        View view = new SpinView(mContext);
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_width),
+                mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_height));
+        showVTextWithLoading(view, layoutParams, null, dismissTime);
+    }
+
     /**
      * Vertical layout with text and default loading image indicator
      * @param text The text to display
@@ -269,117 +275,32 @@ public class ProgressHUD {
         showVTextWithLoading(text, 0);
     }
 
+    public void showVTextWithLoading(CharSequence text, CharSequence detail) {
+        showVTextWithLoading(text, detail, 0);
+    }
+
     /**
      * Vertical layout with text and default loading image indicator, and disappear after the specified time
      * @param text The text to display
      * @param dismissTime Time of disappearance, in milliseconds
      */
     public void showVTextWithLoading(CharSequence text, int dismissTime) {
+        showVTextWithLoading(text, null, dismissTime);
+    }
+
+    public void showVTextWithLoading(CharSequence text, CharSequence detail, int dismissTime) {
         View view = new SpinView(mContext);
         ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_width),
                 mResources.getDimensionPixelSize(R.dimen.vertical_loading_view_height));
-        showVTextWithLoading(view, layoutParams, text, dismissTime);
+        showVTextWithLoading(view, layoutParams, text, detail, dismissTime);
     }
 
     public void showVTextWithLoading(View view, ViewGroup.LayoutParams layoutParams, CharSequence text, int dismissTime) {
-        if (mHudDialog == null || (mHudDialog != null && !(mHudDialog instanceof VerticalProgressHUDDialog))) {
-            if (mHudDialog != null) {
-                mHudDialog.dismiss();
-                mHudDialog = null;
-            }
-        }
-        if (mHudDialog == null) {
-            mHudDialog = new VerticalProgressHUDDialog(mContext);
-        }
-        VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
-        dialog.setPadding(mPaddingLeft, mPaddingTop, mPaddingRight, mPaddingBottom);
-        dialog.setWindowBackgroundDrawable(mWindownBg);
-        dialog.setWindowBackgroundDimAmount(mDimAmount);
-        dialog.setCanceledOnTouchOutside(isCanceledOnTouchOutside);
-        dialog.setInterceptKeyEvent(isInterceptKeyEvent);
-        dialog.showProgress(isShowProgress);
-        dialog.setDialogBackground(mDialogBg);
-        dialog.setLabelTextSize(mLabelTextSize);
-        dialog.setLabelTextColor(mLabelTextColor);
-        dialog.setDetailTextSize(mDetailTextSize);
-        dialog.setDetailTextColor(mDetailTextColor);
-        dialog.setAnimationSpeedRate(mAnimSpeedRate);
-        dialog.setProgress(mProgress);
-        dialog.setView(view, layoutParams);
-        dialog.setText(text);
-        dialog.setDetail(null);
-        if (mDelayTime > 0) {
-            mHandler.postDelayed(mShowRunnable, mDelayTime);
-            if (dismissTime > 0) {
-                mHandler.postDelayed(mDismissRunnable, dismissTime + mDelayTime);
-            }
-        } else {
-            dialog.show();
-            if (dismissTime > 0) {
-                mHandler.postDelayed(mDismissRunnable, dismissTime);
-            }
-        }
+        showVTextWithLoading(view, layoutParams, text, null, dismissTime);
     }
 
-
-    /**
-     * Horizontal layout with text and default loading image indicator
-     * @param text The text to display
-     */
-    public void showHTextWithLoading(CharSequence text) {
-        showHTextWithLoading(text, 0);
-    }
-
-    /**
-     * Horizontal layout with text and default loading image indicator, and disappear after the specified time
-     * @param text The text to display
-     * @param dismissTime Time of disappearance, in milliseconds
-     */
-    public void showHTextWithLoading(CharSequence text, int dismissTime) {
-        if (mHudDialog == null || (mHudDialog != null && !(mHudDialog instanceof HorizontalProgressHUDDialog))) {
-            if (mHudDialog != null) {
-                mHudDialog.dismiss();
-                mHudDialog = null;
-            }
-        }
-        if (mHudDialog == null) {
-            mHudDialog = new HorizontalProgressHUDDialog(mContext);
-        }
-        HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(mResources.getDimensionPixelSize(R.dimen.horizontal_loading_view_width),
-                mResources.getDimensionPixelSize(R.dimen.horizontal_loading_view_height));
-        dialog.setView(new SpinView(mContext), layoutParams);
-        dialog.setCanceledOnTouchOutside(isCanceledOnTouchOutside);
-        dialog.setText(text);
-        dialog.show();
-        if (dismissTime > 0) {
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    dismiss();
-                }
-            }, dismissTime);
-        }
-    }
-
-
-    /**
-     * Horizontal layout indicator with status text and status picture
-     * @param text Status text
-     * @param stateResId Status picture resource ID
-     */
-    public void showHTextWithState(CharSequence text, @DrawableRes int stateResId) {
-        showHTextWithState(text, stateResId, 0);
-    }
-
-    /**
-     * Horizontal layout indicator with status text and status picture, and disappear after the specified time
-     * @param text Status text
-     * @param stateResId Status picture resource ID
-     * @param dismissTime Time of disappearance, in milliseconds
-     */
-    public void showHTextWithState(CharSequence text, @DrawableRes int stateResId, int dismissTime) {
-        // TODO:
+    public void showVTextWithLoading(View view, ViewGroup.LayoutParams layoutParams, CharSequence text, CharSequence detail, int dismissTime) {
+        showVerticalProgressHUD(view, layoutParams, text, detail, dismissTime);
     }
 
     /**
@@ -497,6 +418,65 @@ public class ProgressHUD {
     }
 
     /**
+     * Horizontal layout with text and default loading image indicator
+     * @param text The text to display
+     */
+    public void showHTextWithLoading(CharSequence text) {
+        showHTextWithLoading(text, 0);
+    }
+
+    /**
+     * Horizontal layout with text and default loading image indicator, and disappear after the specified time
+     * @param text The text to display
+     * @param dismissTime Time of disappearance, in milliseconds
+     */
+    public void showHTextWithLoading(CharSequence text, int dismissTime) {
+        if (mHudDialog == null || (mHudDialog != null && !(mHudDialog instanceof HorizontalProgressHUDDialog))) {
+            if (mHudDialog != null) {
+                mHudDialog.dismiss();
+                mHudDialog = null;
+            }
+        }
+        if (mHudDialog == null) {
+            mHudDialog = new HorizontalProgressHUDDialog(mContext);
+        }
+        HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(mResources.getDimensionPixelSize(R.dimen.horizontal_loading_view_width),
+                mResources.getDimensionPixelSize(R.dimen.horizontal_loading_view_height));
+        dialog.setView(new SpinView(mContext), layoutParams);
+        dialog.setCanceledOnTouchOutside(isCanceledOnTouchOutside);
+        dialog.setText(text);
+        dialog.show();
+        if (dismissTime > 0) {
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    dismiss();
+                }
+            }, dismissTime);
+        }
+    }
+
+    /**
+     * Horizontal layout indicator with status text and status picture
+     * @param text Status text
+     * @param stateResId Status picture resource ID
+     */
+    public void showHTextWithState(CharSequence text, @DrawableRes int stateResId) {
+        showHTextWithState(text, stateResId, 0);
+    }
+
+    /**
+     * Horizontal layout indicator with status text and status picture, and disappear after the specified time
+     * @param text Status text
+     * @param stateResId Status picture resource ID
+     * @param dismissTime Time of disappearance, in milliseconds
+     */
+    public void showHTextWithState(CharSequence text, @DrawableRes int stateResId, int dismissTime) {
+        // TODO:
+    }
+
+    /**
      * Custom progress indicator
      * @param view Progress indicator view
      */
@@ -519,14 +499,14 @@ public class ProgressHUD {
      */
     public ProgressHUD setCanceledOnTouchOutside(boolean enabled) {
         isCanceledOnTouchOutside = enabled;
+        if (mHudDialog != null) {
+            mHudDialog.setCanceledOnTouchOutside(isCanceledOnTouchOutside);
+        }
         return this;
     }
 
     public ProgressHUD setPadding(int padding) {
-        mPaddingLeft = padding;
-        mPaddingTop = padding;
-        mPaddingRight = padding;
-        mPaddingBottom = padding;
+        setPadding(padding, padding, padding, padding);
         return this;
     }
 
@@ -535,6 +515,15 @@ public class ProgressHUD {
         mPaddingTop = top;
         mPaddingRight = right;
         mPaddingBottom = bottom;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setPadding(mPaddingLeft, mPaddingTop, mPaddingRight, mPaddingBottom);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
@@ -544,14 +533,27 @@ public class ProgressHUD {
     }
 
     public ProgressHUD setWindowBackgroundDrawable(Drawable drawable) {
-        if (drawable != null) {
-            mWindownBg = drawable;
+        mWindownBg = drawable;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setWindowBackgroundDrawable(mWindownBg);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
         }
         return this;
     }
 
     public ProgressHUD setWindowBackgroundDimAmount(float dimAmount) {
         mDimAmount = dimAmount;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof BaseDialog) {
+                BaseDialog dialog = (BaseDialog)mHudDialog;
+                dialog.setWindowBackgroundDimAmount(mDimAmount);
+            }
+        }
         return this;
     }
 
@@ -562,31 +564,79 @@ public class ProgressHUD {
 
     public ProgressHUD setContentBackgroundDrawable(Drawable drawable) {
         mDialogBg = drawable;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setDialogBackground(mDialogBg);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
     public ProgressHUD setLabelTextSize(int size) {
         mLabelTextSize = size;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setLabelTextSize(mLabelTextSize);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
     public ProgressHUD setDetailTextSize(int size) {
         mDetailTextSize = size;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setDetailTextSize(mDetailTextSize);
+            }
+        }
         return this;
     }
 
     public ProgressHUD setLabelTextColor(int color) {
         mLabelTextColor = color;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setLabelTextColor(mLabelTextColor);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
     public ProgressHUD setDetailTextColro(int color) {
         mDetailTextColor = color;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setDetailTextColor(mDetailTextColor);
+            }
+        }
         return this;
     }
 
     public ProgressHUD setAnimSpeedRate(int rate) {
         mAnimSpeedRate = rate;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setAnimationSpeedRate(mAnimSpeedRate);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
@@ -595,13 +645,33 @@ public class ProgressHUD {
         return this;
     }
 
+    public ProgressHUD setWindowType(int type) {
+        mWindowType = type;
+        return this;
+    }
+
     private ProgressHUD setProgress(int progress) {
         mProgress = progress;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof VerticalProgressHUDDialog) {
+                VerticalProgressHUDDialog dialog = (VerticalProgressHUDDialog)mHudDialog;
+                dialog.setProgress(mProgress);
+            } else if (mHudDialog instanceof HorizontalProgressHUDDialog) {
+                HorizontalProgressHUDDialog dialog = (HorizontalProgressHUDDialog)mHudDialog;
+
+            }
+        }
         return this;
     }
 
     public ProgressHUD setInterceptKeyEvent(boolean enabled) {
         isInterceptKeyEvent = enabled;
+        if (mHudDialog != null) {
+            if (mHudDialog instanceof BaseDialog) {
+                BaseDialog dialog = (BaseDialog)mHudDialog;
+                dialog.setInterceptKeyEvent(isInterceptKeyEvent);
+            }
+        }
         return this;
     }
 
@@ -629,6 +699,58 @@ public class ProgressHUD {
     public ProgressHUD setListener(OnDismissListener listener) {
         mListener = listener;
         return this;
+    }
+
+    private void showVerticalProgressHUD(View view, ViewGroup.LayoutParams layoutParams, CharSequence label, CharSequence detail, int dismissTime) {
+        if (mHudDialog == null || (mHudDialog != null && !(mHudDialog instanceof VerticalProgressHUDDialog))) {
+            if (mHudDialog != null) {
+                dismiss();
+                mHudDialog = null;
+            }
+        }
+        VerticalProgressHUDDialog dialog;
+        if (mHudDialog == null) {
+            mHudDialog = new VerticalProgressHUDDialog(mContext);
+            if (mDialogBg instanceof GradientDrawable) {
+                GradientDrawable drawable = (GradientDrawable)mDialogBg;
+                drawable.setCornerRadius(Utils.dpToPixel(10, mContext));
+            }
+            dialog = (VerticalProgressHUDDialog)mHudDialog;
+            dialog.setPadding(mPaddingLeft, mPaddingTop, mPaddingRight, mPaddingBottom);
+            dialog.setWindowType(mWindowType);
+            dialog.setWindowBackgroundDrawable(mWindownBg);
+            dialog.setWindowBackgroundDimAmount(mDimAmount);
+            dialog.setCanceledOnTouchOutside(isCanceledOnTouchOutside);
+            dialog.setInterceptKeyEvent(isInterceptKeyEvent);
+            dialog.showProgress(isShowProgress);
+            dialog.setDialogBackground(mDialogBg);
+            dialog.setLabelTextSize(mLabelTextSize);
+            dialog.setLabelTextColor(mLabelTextColor);
+            dialog.setDetailTextSize(mDetailTextSize);
+            dialog.setDetailTextColor(mDetailTextColor);
+            dialog.setAnimationSpeedRate(mAnimSpeedRate);
+            dialog.setProgress(mProgress);
+        } else {
+            dialog = (VerticalProgressHUDDialog)mHudDialog;
+        }
+        dialog.setView(view, layoutParams);
+        dialog.setText(label);
+        dialog.setDetail(null);
+        if (mDelayTime > 0) {
+            mHandler.postDelayed(mShowRunnable, mDelayTime);
+            if (dismissTime > 0) {
+                mHandler.postDelayed(mDismissRunnable, dismissTime + mDelayTime);
+            }
+        } else {
+            dialog.show();
+            if (dismissTime > 0) {
+                mHandler.postDelayed(mDismissRunnable, dismissTime);
+            }
+        }
+    }
+
+    private void showHorizontalProgressHUD(View view, ViewGroup.LayoutParams layoutParams, CharSequence label, CharSequence detail, int dismissTime) {
+
     }
 
     public interface OnDismissListener {
